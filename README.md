@@ -8,10 +8,10 @@
 
 #### Endpoints:
   - **GET** `/purchases`: Returns a list of all purchases
-    - **Response**: Array of [Purchase](#purchase) or [Error](#error)
+    - **Response**: Array of [Detailed Purchase](#detailed-purchase) or [Error](#error)
   - **POST** `/purchase`: Creates a new purchase in the database
     - **Body**: [Purchase](#purchase)
-    - **Response**: [Purchase With ID](#purchase-with-id) or [Invalid](#invalid) or [Error](#error)
+    - **Response**: [Detailed Purchase](#detailed-purchase) or [Invalid](#invalid) or [Error](#error)
   - **PUT** `/purchase/<id>`: Updates an existing purchase in the database
     - **Parameters**:
       - **id**: The ID of the purchase to update
@@ -47,11 +47,12 @@ The following responses are defined in the API server's REST interface:
 }
 ```
 
-## Purchase With ID
+## Detailed Purchase
 
 ```py
 {
     '_id': str,
+    '_created_at': int,
     # The dollars value of the purchase
     'dollar_value': float,
     # The euros value of the purchase
