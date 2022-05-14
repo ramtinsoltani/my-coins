@@ -22,7 +22,7 @@
       - **id**: The ID of the purchase to update
     - **Response**: [Success](#success) or [Invalid](#invalid) or [Error](#error)
   - **GET** `/bitcoin`: Returns the current market ticker for BTC-USD from Bittrex
-    - **Response**: [Bittrex Ticker](#bittrex-ticket) or [Bittrex Error](#bittrex-error) or [Error](#error)
+    - **Response**: [Bittrex Ticker](#bittrex-ticker) or [Bittrex Error](#bittrex-error) or [Error](#error)
 
 #### Static hosting
 
