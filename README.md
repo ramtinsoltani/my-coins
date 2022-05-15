@@ -1,13 +1,13 @@
 # My Coins API Server
 
-#### How to run
+## How to run
   1. Install all the dependencies: `pip install -r requirements.txt`
   2. Install MongoDB Community server and have it run on `localhost:27017` without user authentication
   3. Set the environment variables `BITTREX_API_KEY` and `BITTREX_API_SECRET` with your Bittrex account API key and secret
   4. Run `flask run`
   5. API server becomes available on `http://localhost:5000`
 
-#### How to run on Windows startup
+## How to run on Windows startup
   1. Open the startup folder by pressing <kbd>Windows</kbd> + <kbd>R</kbd> and typing `shell:startup`
   2. Create a VBS file (e.g. `startup.vbs`) with the following content (replace `PATH_TO_PROJECT` with the absolute path to this project):
       ```vbs
@@ -17,7 +17,7 @@
       ```
   3. The server will automatically run in the background when the Windows starts next time, process name in Task Manager is `Python.exe`
 
-#### Endpoints:
+## Endpoints:
   - **GET** `/purchases`: Returns a list of all purchases
     - **Response**: Array of [Detailed Purchase](#detailed-purchase) or [Error](#error)
   - **POST** `/purchase`: Creates a new purchase in the database
@@ -35,7 +35,7 @@
   - **GET** `/bitcoin`: Returns the current market ticker for BTC-USD from Bittrex
     - **Response**: [Bittrex Ticker](#bittrex-ticker) or [Bittrex Error](#bittrex-error) or [Error](#error)
 
-#### Static hosting
+## Static hosting
 
 Contents of `/public` directory is hosted on `http://localhost:5000`.
 
