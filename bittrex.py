@@ -1,5 +1,5 @@
 import utilities as utils
-from requests import request, Request
+from requests import request
 from json import dumps as stringify
 from hashlib import sha512
 import hmac
