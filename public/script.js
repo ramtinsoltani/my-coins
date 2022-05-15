@@ -1,15 +1,25 @@
-const ctx = document.getElementById('chart').getContext('2d');
+//////////////////////////////////////////////////////////////
+////////////////////////// GLOBALS ///////////////////////////
+//////////////////////////////////////////////////////////////
 
+const ctx = document.getElementById('chart').getContext('2d');
+let chart = null;
 let latestPurchases = [];
 let oldToastType = 'text-bg-secondary';
 let dateFilterStart = null, dateFilterEnd = null;
 
+//////////////////////////////////////////////////////////////
+/////////////////////////// UTILS ////////////////////////////
+//////////////////////////////////////////////////////////////
+
+/** Builds a full URL for the given endpoint */
 function getUrl(endpoint) {
 
   return `http://localhost:5000${endpoint}`;
 
 }
 
+/** Displays a notification message with the given parameters */
 function newToast(message, type='secondary') {
 
   const toast = document.getElementById('toast');
@@ -22,6 +32,7 @@ function newToast(message, type='secondary') {
 
 }
 
+/** Creates a canvas gradient based on the given height */
 function createGradient(height) {
 
   const gradient = ctx.createLinearGradient(0, 0, 0, height * .6);
@@ -33,6 +44,7 @@ function createGradient(height) {
 
 }
 
+/** Formats the given timestamp to dd/mm/yyyy date string */
 function formatTimestamp(timestamp) {
 
   const date = new Date(timestamp);
@@ -44,6 +56,7 @@ function formatTimestamp(timestamp) {
 
 }
 
+/** Converts a date string in dd/mm/yyyy format to epoch timestamp */
 function dateStringToTimestamp(text) {
 
   const segments = text.split('/');
@@ -52,6 +65,7 @@ function dateStringToTimestamp(text) {
 
 }
 
+/** Returns true if the given timestamp is within the global date range */
 function isTimestampInRange(timestamp) {
 
   if ( dateFilterStart && timestamp < dateFilterStart )
@@ -63,6 +77,10 @@ function isTimestampInRange(timestamp) {
   return true;
 
 }
+
+//////////////////////////////////////////////////////////////
+////////////////////////// CONFIGS ///////////////////////////
+//////////////////////////////////////////////////////////////
 
 const data = {
   datasets: [{
@@ -96,8 +114,6 @@ const annotations = {
   }
 };
 
-let chart = null;
-
 const config = {
   type: 'line',
   data: data,
@@ -122,6 +138,7 @@ const config = {
       duration: 0
     },
     responsive: true,
+    // Re-render the gradient based on new chart height on resize
     onResize: () => {
 
       if ( ! chart ) return;
@@ -136,6 +153,7 @@ const config = {
       tooltip: {
         displayColors: false,
         callbacks: {
+          // Display the metadata object dynamically on tooltip
           label: context => {
 
             return Object.keys(context.dataset.metadata[context.dataIndex])
@@ -148,12 +166,14 @@ const config = {
         display: false
       },
       annotation: {
+        // Display label on annotation line hover
         enter: context => {
 
           annotations[context.id].label.enabled = true;
           chart.update();
 
         },
+        // Hide label on annotation line mouse leave
         leave: context => {
 
           annotations[context.id].label.enabled = false;
@@ -175,24 +195,33 @@ const datepickerConfig = {
 
 chart = new Chart(document.getElementById('chart'), config);
 
+//////////////////////////////////////////////////////////////
+/////////////////////// Global Methods ///////////////////////
+//////////////////////////////////////////////////////////////
+
 function updateAnnotations(bittrexData) {
 
+  // Update the annotation line and label based on the given bittrex data
   annotations.bittrexLine.value = bittrexData.lastTradeRate;
   annotations.bittrexLine.label.content = `Bid (${(+bittrexData.bidRate).toFixed(2)}), Ask (${(+bittrexData.askRate).toFixed(2)}), Last (${(+bittrexData.lastTradeRate).toFixed(2)})`;
   annotations.bittrexLine.display = true;
 
+  // Update the chart
   chart.update();
 
 }
 
 function updateDataset() {
 
+  // Display the X axis if there's any data
   config.options.scales.x.display = !! latestPurchases.length;
 
+  // Set the data points
   data.datasets[0].data = latestPurchases.map(p => ({
     y: p.bitcoin_price,
     x: p.created_at
   }));
+  // Set the metadata object to be displayed in tooltip of each data point
   data.datasets[0].metadata = latestPurchases.map(p => ({
     'Bitcoin Price': p.bitcoin_price,
     'Bitcoin Volume': p.bitcoin_volume,
@@ -200,6 +229,7 @@ function updateDataset() {
     'Euro Value': p.euro_value
   }));
 
+  // Update the chart
   chart.update();
 
 }
@@ -214,6 +244,7 @@ function fetchPurchases(updateView) {
 
       latestPurchases = purchases;
 
+      // Update the table and graph if updateView is set
       if ( updateView ) {
 
         updateDataset();
@@ -240,6 +271,7 @@ function updateTable() {
   const tableBody = document.getElementById('purchasesTableBody');
   const addButton = document.getElementById('addButton');
 
+  // Remove all rows in the table except for the add button row
   while ( tableBody.firstChild && tableBody.firstChild.id !== 'addButton' )
     tableBody.removeChild(tableBody.firstChild);
 
@@ -248,10 +280,12 @@ function updateTable() {
     const purchase = latestPurchases[i];
     const row = template.content.cloneNode(true);
 
+    // Do not render the row if not in the current global time range filter
     if ( ! isTimestampInRange(purchase.created_at) ) continue;
 
     for ( const td of row.children[0].children ) {
 
+      // Load the purchase data into the cells
       if ( ! td.classList.contains('row-controls') ) {
 
         if ( td.dataset.type === 'date' )
@@ -260,21 +294,29 @@ function updateTable() {
           td.innerText = purchase[td.dataset.key];
 
       }
+      // For the row controls cell...
       else {
 
+        // Set the purchase index as data attribute
         td.dataset.index = i;
 
       }
 
     }
 
+    // Add the row before the add button row
     tableBody.insertBefore(row, addButton);
 
   }
 
+  // Display the add button row (if hidden)
   addButton.classList.remove('d-none');
 
 }
+
+//////////////////////////////////////////////////////////////
+////////////////////// Event Handlers ////////////////////////
+//////////////////////////////////////////////////////////////
 
 function onEditPurchase(parentTd) {
 
@@ -283,14 +325,19 @@ function onEditPurchase(parentTd) {
   const addButton = document.getElementById('addButton');
   const row = template.content.cloneNode(true);
 
+  // Hide the add button row
   addButton.classList.add('d-none');
+  // Hide the original row (with data)
   parentTd.parentElement.classList.add('d-none');
+  // Set the purchase index of original row as the editable row's data attribute
   row.firstElementChild.lastElementChild.dataset.index = parentTd.dataset.index;
 
+  // Set the value of every input of the editable row from the purchase item
   for ( const td of row.firstElementChild.children ) {
 
     const input = td.firstElementChild;
 
+    // Ignore if not input
     if ( input.tagName !== 'INPUT' ) continue;
 
     if ( td.dataset.type === 'date' )
@@ -300,8 +347,10 @@ function onEditPurchase(parentTd) {
 
   }
 
+  // Insert the editable row before the original row
   tableBody.insertBefore(row, parentTd.parentElement);
 
+  // Instantiate the date picker plugin for the date input of the editable row
   $('input.date').datepicker(datepickerConfig);
 
 }
@@ -313,11 +362,15 @@ function onAddPurchase() {
   const addButton = document.getElementById('addButton');
   const row = template.content.cloneNode(true);
 
+  // Set add mode in data attribute
   row.firstElementChild.lastElementChild.dataset.mode = 'add';
 
+  // Hide the add button row
   addButton.classList.add('d-none');
+  // Add the editable row before the add button at the end of the table
   tableBody.insertBefore(row, addButton);
 
+  // Instantiate the date picker plugin for the date input inside the editable row
   $('input.date').datepicker(datepickerConfig);
 
 }
@@ -327,18 +380,24 @@ function onCancelPurchase(td) {
   const addButton = document.getElementById('addButton');
   const tableBody = document.getElementById('purchasesTableBody');
 
+  // If was adding a new purchase
   if ( td.dataset.mode === 'add' ) {
 
+    // Remove the editable row
     tableBody.removeChild(addButton.previousElementSibling);
 
   }
+  // If was editting an existing purchase
   else {
 
+    // Remove the editable row
     td.parentElement.nextElementSibling.classList.remove('d-none');
+    // Display the original row (with data)
     tableBody.removeChild(td.parentElement);
 
   }
 
+  // Display the add button row
   addButton.classList.remove('d-none');
 
 }
@@ -348,15 +407,19 @@ function onSubmitPurchase(parentTd) {
   const tableBody = document.getElementById('purchasesTableBody');
   const inputData = {};
 
+  // Read the values of inputs
   for ( const td of parentTd.parentElement.children ) {
 
     const input = td.firstElementChild;
 
+    // If element is not an input, ignore
     if ( input.tagName !== 'INPUT' ) continue;
 
+    // If empty input
     if ( ! input.value.trim().length )
       return newToast('All fields are required!', 'warning');
 
+    // Sanitize the input based on the data-type attribute of TD parent element
     let sanitized = input.value;
 
     if ( td.dataset.type === 'number' )
@@ -370,6 +433,7 @@ function onSubmitPurchase(parentTd) {
 
   }
 
+  // If adding a new purchase
   if ( parentTd.dataset.mode === 'add' ) {
 
     fetch(getUrl('/purchase'), {
@@ -397,6 +461,7 @@ function onSubmitPurchase(parentTd) {
     });
 
   }
+  // If editting an axisting purchase
   else {
 
     fetch(getUrl(`/purchase/${latestPurchases[+parentTd.dataset.index]._id}`), {
@@ -417,6 +482,7 @@ function onSubmitPurchase(parentTd) {
       }
       else if ( result.invalid )
         newToast('Invalid input!', 'warning');
+      // False success usually happens when the data was the same
       else if ( result.success === false )
         newToast('Data has no changes')
 
@@ -434,6 +500,7 @@ function onSubmitPurchase(parentTd) {
 
 function onDeletePurchase(index) {
 
+  // Send a request to the delete endpoint
   fetch(getUrl(`/purchase/${latestPurchases[index]._id}`), {
     method: 'DELETE'
   })
@@ -461,21 +528,27 @@ function onDeletePurchase(index) {
 
 function onFilterByDate() {
 
+  // Read the date range input values
   const start = document.getElementById('startDate').value.trim();
   const end = document.getElementById('endDate').value.trim();
 
+  // If both are empty, clear the filter
   if ( ! start && ! end )
     return onClearDateFilter();
 
+  // Convert date strings from input to timestamps
   const startTimestamp = dateStringToTimestamp(start);
   const endTimestamp = dateStringToTimestamp(end);
 
+  // If invalid date string (timestamp conversion returned NaN)
   if ( (isNaN(startTimestamp) && start) || (isNaN(endTimestamp) && end) )
     return newToast('Invalid date range!', 'warning');
 
+  // Set the global time range filter variables
   dateFilterStart = start ? startTimestamp : null;
   dateFilterEnd = end ? endTimestamp : null;
 
+  // Update the table
   updateTable();
 
 }
@@ -485,12 +558,15 @@ function onClearDateFilter() {
   const startInput = document.getElementById('startDate');
   const endInput = document.getElementById('endDate');
 
+  // Reset date picker inputs
   startInput.value = '';
   endInput.value = '';
 
+  // Reset global date range variables
   dateFilterStart = null;
   dateFilterEnd = null;
 
+  // Update the table
   updateTable();
 
 }
@@ -514,11 +590,13 @@ window.addEventListener('load', () => {
   // Fetch Bitcoin price every 5 seconds
   setInterval(fetchBitcoinPrice, 5000);
 
+  // ...and right now
   fetchBitcoinPrice();
 
   // Fetch purchases
   fetchPurchases(true);
 
+  // Register date picker plugin for the range filter
   $('.input-daterange').datepicker(datepickerConfig);
 
 });
