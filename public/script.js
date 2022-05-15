@@ -7,6 +7,8 @@ let chart = null;
 let latestPurchases = [];
 let oldToastType = 'text-bg-secondary';
 let dateFilterStart = null, dateFilterEnd = null;
+let lastBitcoinPrice = null;
+const selectionMappings = {};
 
 //////////////////////////////////////////////////////////////
 /////////////////////////// UTILS ////////////////////////////
@@ -218,13 +220,16 @@ function updateDataset() {
 
   // Set the data points
   data.datasets[0].data = latestPurchases
+  // Filter out purchases not in the global time range
   .filter(p => isTimestampInRange(p.created_at))
   .map(p => ({
     y: p.bitcoin_price,
     x: p.created_at
   }));
+
   // Set the metadata object to be displayed in tooltip of each data point
   data.datasets[0].metadata = latestPurchases
+  // Filter out purchases not in the global time range
   .filter(p => isTimestampInRange(p.created_at))
   .map(p => ({
     'Bitcoin Price': p.bitcoin_price,
@@ -238,6 +243,25 @@ function updateDataset() {
 
 }
 
+function fetchBitcoinPrice() {
+
+  fetch(getUrl('/bitcoin'))
+  .then(res => res.json())
+  .then(data => {
+
+    lastBitcoinPrice = data.lastTradeRate;
+    updateAnnotations(data);
+
+  })
+  .catch(error => {
+
+    console.error(error);
+    newToast(error.message, 'danger');
+
+  });
+
+};
+
 function fetchPurchases(updateView) {
 
   return new Promise(resolve => {
@@ -247,6 +271,14 @@ function fetchPurchases(updateView) {
     .then(purchases => {
 
       latestPurchases = purchases;
+
+      // Update selection mappings
+      for ( const purchase of purchases ) {
+
+        if ( ! selectionMappings.hasOwnProperty(purchase._id) )
+          selectionMappings[purchase._id] = true;
+
+      }
 
       // Update the table and graph if updateView is set
       if ( updateView ) {
@@ -285,12 +317,18 @@ function updateTable() {
     const row = template.content.cloneNode(true);
 
     // Do not render the row if not in the current global time range filter
-    if ( ! isTimestampInRange(purchase.created_at) ) continue;
+    if ( ! isTimestampInRange(purchase.created_at) ) {
+
+      // Reset their mappings before ignoring the rendering
+      selectionMappings[purchase._id] = true;
+      continue;
+
+    }
 
     for ( const td of row.children[0].children ) {
 
       // Load the purchase data into the cells
-      if ( ! td.classList.contains('row-controls') ) {
+      if ( ! td.classList.contains('row-controls') && ! td.classList.contains('row-selection-controls') ) {
 
         if ( td.dataset.type === 'date' )
           td.innerText = formatTimestamp(purchase[td.dataset.key]);
@@ -298,11 +336,15 @@ function updateTable() {
           td.innerText = purchase[td.dataset.key];
 
       }
-      // For the row controls cell...
+      // For the row controls cells...
       else {
 
         // Set the purchase index as data attribute
         td.dataset.index = i;
+
+        // Update selection
+        if ( td.classList.contains('row-selection-controls') )
+          td.firstElementChild.firstElementChild.checked = !! selectionMappings[purchase._id];
 
       }
 
@@ -315,6 +357,50 @@ function updateTable() {
 
   // Display the add button row (if hidden)
   addButton.classList.remove('d-none');
+
+  // Update the summary table
+  updateSummary();
+
+}
+
+function updateSummary() {
+
+  const totalVolumeElement = document.getElementById('totalVolume');
+  const totalPriceElement = document.getElementById('totalPrice');
+  const totalDollarsElement = document.getElementById('totalDollars');
+  const totalEurosElement = document.getElementById('totalEuros');
+  const profitElement = document.getElementById('profit');
+
+  let totalVolume = 0, totalPrice = 0, totalDollars = 0, totalEuros = 0, profit = 0;
+
+  const targetPurchases = latestPurchases
+  // Only target the selected purchases that are rendered (within the time range filter)
+  .filter(p => !! selectionMappings[p._id] && isTimestampInRange(p.created_at));
+
+  // Calculate the summary
+  for ( const purchase of targetPurchases ) {
+
+    totalVolume += purchase.bitcoin_volume;
+    totalPrice += purchase.bitcoin_price;
+    totalDollars += purchase.dollar_value;
+    totalEuros += purchase.euro_value;
+
+  }
+
+  profit = ((totalVolume * lastBitcoinPrice) - totalDollars);
+
+  // Update the summary table (use .toFixed to overcome the decimal problems)
+  totalVolumeElement.innerText = (+totalVolume.toFixed(10)) + '';
+  totalPriceElement.innerText = totalPrice.toFixed(2);
+  totalDollarsElement.innerText = totalDollars.toFixed(2);
+  totalEurosElement.innerText = totalEuros.toFixed(2);
+  profitElement.innerText = profit.toFixed(2);
+
+  // Add color styling
+  profitElement.classList.remove('text-success', 'text-danger');
+
+  if ( profit > 0 ) profitElement.classList.add('text-success');
+  if ( profit < 0 ) profitElement.classList.add('text-danger');
 
 }
 
@@ -342,7 +428,7 @@ function onEditPurchase(parentTd) {
     const input = td.firstElementChild;
 
     // Ignore if not input
-    if ( input.tagName !== 'INPUT' ) continue;
+    if ( ! input || input.tagName !== 'INPUT' ) continue;
 
     if ( td.dataset.type === 'date' )
       input.value = formatTimestamp(latestPurchases[+parentTd.dataset.index][td.dataset.key]);
@@ -417,7 +503,7 @@ function onSubmitPurchase(parentTd) {
     const input = td.firstElementChild;
 
     // If element is not an input, ignore
-    if ( input.tagName !== 'INPUT' ) continue;
+    if ( ! input || input.tagName !== 'INPUT' ) continue;
 
     // If empty input
     if ( ! input.value.trim().length )
@@ -577,21 +663,15 @@ function onClearDateFilter() {
 
 }
 
+function onSelectionChanged(checked, index) {
+
+  selectionMappings[latestPurchases[index]._id] = checked;
+
+  updateSummary();
+
+}
+
 window.addEventListener('load', () => {
-
-  const fetchBitcoinPrice = () => {
-
-    fetch(getUrl('/bitcoin'))
-    .then(res => res.json())
-    .then(updateAnnotations)
-    .catch(error => {
-
-      console.error(error);
-      newToast(error.message, 'danger');
-
-    });
-
-  };
 
   // Fetch Bitcoin price every 5 seconds
   setInterval(fetchBitcoinPrice, 5000);

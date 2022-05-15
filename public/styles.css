@@ -19,7 +19,7 @@ main {
   flex-direction: column;
   align-items: center;
   gap: 60px;
-  width: 800px;
+  max-width: 800px;
 }
 
 canvas#chart {
@@ -28,4 +28,8 @@ canvas#chart {
 
 .row-controls {
   min-width: 120px;
+}
+
+table.summary-table {
+  margin-top: -60px;
 }

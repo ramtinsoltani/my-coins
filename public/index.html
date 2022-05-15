@@ -33,6 +33,7 @@
       <table class="table table-hover">
         <thead class="table-light">
           <tr>
+            <th></th>
             <th>Bitcoin Volume</th>
             <th>Bitcoin Price</th>
             <th>Dollar Value</th>
@@ -43,16 +44,42 @@
         </thead>
         <tbody id="purchasesTableBody">
           <tr id="addButton">
-            <td colspan="5"></td>
+            <td colspan="6"></td>
             <td class="text-end row-controls">
               <button type="button" class="btn btn-sm btn-primary" onclick="onAddPurchase()">Add</button>
             </td>
           </tr>
         </tbody>
       </table>
+      <!-- Summary table -->
+      <table class="table summary-table">
+        <thead>
+          <tr>
+            <th>Total Volume</th>
+            <th>Total Price</th>
+            <th>Total Dollars</th>
+            <th>Total Euros</th>
+            <th>Profit</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td id="totalVolume"></td>
+            <td id="totalPrice"></td>
+            <td id="totalDollars"></td>
+            <td id="totalEuros"></td>
+            <td class="fw-bold" id="profit"></td>
+          </tr>
+        </tbody>
+      </table>
       <!-- Purchase row template for displaying data -->
       <template id="purchaseRow">
         <tr class="align-middle">
+          <td class="row-selection-controls">
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" onchange="onSelectionChanged(this.checked, +this.parentElement.parentElement.dataset.index)">
+            </div>
+          </td>
           <!-- data-key and data-type attributes maps the cell to the response field from the backend -->
           <td data-key="bitcoin_volume" data-type="number"></td>
           <td data-key="bitcoin_price" data-type="number"></td>
@@ -71,6 +98,7 @@
       <!-- Editable row template for editting and adding new purchases -->
       <template id="editableRow">
         <tr class="align-middle">
+          <td></td>
           <!-- data-key and data-type attributes maps the cell to the response field from the backend -->
           <td data-key="bitcoin_volume" data-type="number">
             <input class="form-control form-control-sm" type="text" placeholder="Bitcoin volume">
