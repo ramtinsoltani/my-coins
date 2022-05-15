@@ -217,12 +217,16 @@ function updateDataset() {
   config.options.scales.x.display = !! latestPurchases.length;
 
   // Set the data points
-  data.datasets[0].data = latestPurchases.map(p => ({
+  data.datasets[0].data = latestPurchases
+  .filter(p => isTimestampInRange(p.created_at))
+  .map(p => ({
     y: p.bitcoin_price,
     x: p.created_at
   }));
   // Set the metadata object to be displayed in tooltip of each data point
-  data.datasets[0].metadata = latestPurchases.map(p => ({
+  data.datasets[0].metadata = latestPurchases
+  .filter(p => isTimestampInRange(p.created_at))
+  .map(p => ({
     'Bitcoin Price': p.bitcoin_price,
     'Bitcoin Volume': p.bitcoin_volume,
     'Dollar Value': p.dollar_value,
@@ -548,8 +552,9 @@ function onFilterByDate() {
   dateFilterStart = start ? startTimestamp : null;
   dateFilterEnd = end ? endTimestamp : null;
 
-  // Update the table
+  // Update the table and the chart
   updateTable();
+  updateDataset();
 
 }
 
@@ -566,8 +571,9 @@ function onClearDateFilter() {
   dateFilterStart = null;
   dateFilterEnd = null;
 
-  // Update the table
+  // Update the table and the chart
   updateTable();
+  updateDataset();
 
 }
 
