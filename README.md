@@ -82,7 +82,7 @@ The following responses are defined in the API server's REST interface:
 
 ```py
 {
-    'success': True
+    'success': bool
 }
 ```
 
