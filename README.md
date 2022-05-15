@@ -72,7 +72,7 @@ The following responses are defined in the API server's REST interface:
     # The Bitcoin price at the time of the purchase
     'bitcoin_price': float,
     # The Bitcoin volume purchased
-    'bitcoin_volume': float
+    'bitcoin_volume': float,
     # An epoch timestamp (in milliseconds) for the date of purchase
     'created_at': int
 }
