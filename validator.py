@@ -27,8 +27,8 @@ def validate_body(body, validator, strict=False):
     for key in validator:
         # Invalid if strict checking and validator key does not exist in body
         if strict and not key in body: return False
-        # Invalid if validator key is found in body but value has a different type than validator's value
-        if key in body and type(body[key]) is not validator[key]: return False
+        # Invalid if validator key is found in body but value has a different type than validator's list of allowed types
+        if key in body and type(body[key]) not in validator[key]: return False
     # Iterate through body keys
     for key in body:
         # Invalid if body key does not exist in validator

@@ -40,10 +40,10 @@ def _read_document(collection, id):
 
 # Document schema used for input validation
 DOCUMENT_SCHEMA = {
-    'dollar_value': float,
-    'euro_value': float,
-    'bitcoin_price': float,
-    'bitcoin_volume': float
+    'dollar_value': [float, int],
+    'euro_value': [float, int],
+    'bitcoin_price': [float, int],
+    'bitcoin_volume': [float, int]
 }
 
 def create_document(collection, data):

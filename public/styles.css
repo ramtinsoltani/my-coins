@@ -25,3 +25,7 @@ main {
 canvas#chart {
   max-width: 100%;
 }
+
+.row-controls {
+  min-width: 120px;
+}

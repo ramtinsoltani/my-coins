@@ -4,12 +4,77 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.7.1/chart.min.js" integrity="sha512-QSkVNOCYLtj73J4hbmVoOV6KVZuMluZlioC+trLpewV8qMjsWqlIQvkn1KGX2StWvPMdWGBqim1xlC8krl1EKQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/chartjs-plugin-annotation/1.4.0/chartjs-plugin-annotation.min.js" integrity="sha512-HrwQrg8S/xLPE6Qwe7XOghA/FOxX+tuVF4TxbvS73/zKJSs/b1gVl/P4MsdfTFWYFYg/ISVNYIINcg35Xvr6QQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.0-beta1/dist/js/bootstrap.bundle.min.js"></script>
+    <link rel="stylesheet" href="	https://cdn.jsdelivr.net/npm/bootstrap@5.2.0-beta1/dist/css/bootstrap.min.css">
     <link rel="stylesheet" href="/styles.css">
   </head>
   <body>
     <main>
       <canvas id="chart" width="800" height="500"></canvas>
-      <p>Hello world!</p>
+      <table class="table table-hover">
+        <thead class="table-light">
+          <tr>
+            <th>Bitcoin Volume</th>
+            <th>Bitcoin Price</th>
+            <th>Dollar Value</th>
+            <th>Euro Value</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="purchasesTableBody">
+          <tr id="addButton">
+            <td colspan="5" class="text-end">
+              <button type="button" class="btn btn-sm btn-primary" onclick="onAddPurchase()">Add</button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+      <template id="purchaseRow">
+        <tr class="align-middle">
+          <td data-key="bitcoin_volume"></td>
+          <td data-key="bitcoin_price"></td>
+          <td data-key="dollar_value"></td>
+          <td data-key="euro_value"></td>
+          <td class="row-controls text-end">
+            <div class="btn-group-sm">
+              <button type="button" class="btn btn-secondary" onclick="onEditPurchase(this.parentElement.parentElement)">Edit</button>
+              <button type="button" class="btn btn-danger" onclick="onDeletePurchase(+this.parentElement.parentElement.dataset.index)">Delete</button>
+            </div>
+          </td>
+        </tr>
+      </template>
+      <template id="editableRow">
+        <tr class="align-middle">
+          <td data-key="bitcoin_volume" data-type="number">
+            <input class="form-control form-control-sm" type="text" placeholder="Bitcoin volume">
+          </td>
+          <td data-key="bitcoin_price" data-type="number">
+            <input class="form-control form-control-sm" type="text" placeholder="Bitcoin Price">
+          </td>
+          <td data-key="dollar_value" data-type="number">
+            <input class="form-control form-control-sm" type="text" placeholder="Dollar Value">
+          </td>
+          <td data-key="euro_value" data-type="number">
+            <input class="form-control form-control-sm" type="text" placeholder="Euro Value">
+          </td>
+          <td class="row-controls text-end">
+            <div class="btn-group-sm">
+              <button type="button" class="btn btn-primary" onclick="onSubmitPurchase(this.parentElement.parentElement)">Ok</button>
+              <button type="button" class="btn btn-secondary" onclick="onCancelPurchase(this.parentElement.parentElement)">Cancel</button>
+            </div>
+          </td>
+        </tr>
+      </template>
+      <div class="toast-container position-fixed bottom-0 end-0 p-3">
+        <div id="toast" class="toast text-bg-secondary align-items-center border-0">
+          <div class="d-flex">
+            <div id="toastBody" class="toast-body">
+              Hello, world! This is a toast message.
+            </div>
+            <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+          </div>
+        </div>
+      </div>
       <script src="/script.js" charset="utf-8"></script>
     </main>
   </body>
