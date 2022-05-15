@@ -2,9 +2,20 @@
 
 #### How to run
   1. Install all the dependencies: `pip install -r requirements.txt`
-  2. Set the environment variables `BITTREX_API_KEY` and `BITTREX_API_SECRET` with your Bittrex account API key and secret
-  3. Run `flask run`
-  4. API server becomes available on `http://localhost:5000`
+  2. Install MongoDB Community server and have it run on `localhost:27017` without user authentication
+  3. Set the environment variables `BITTREX_API_KEY` and `BITTREX_API_SECRET` with your Bittrex account API key and secret
+  4. Run `flask run`
+  5. API server becomes available on `http://localhost:5000`
+
+#### How to run on Windows startup
+  1. Open the startup folder by pressing <kbd>Windows</kbd> + <kbd>R<kbd> and typing `shell:startup`
+  2. Create a VBS file (e.g. `startup.vbs`) with the following content (replace `PATH_TO_PROJECT` with the absolute path to this project):
+    ```vbs
+    Set WshShell = CreateObject("WScript.Shell")
+      WshShell.Run Chr(34) & "PATH_TO_PROJECT\run.bat" & Chr(34), 0
+    Set WshShell = Nothing
+    ```
+  3. The server will automatically run in the background when the Windows starts next time, process name in Task Manager is `Python.exe`
 
 #### Endpoints:
   - **GET** `/purchases`: Returns a list of all purchases
