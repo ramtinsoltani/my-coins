@@ -8,14 +8,16 @@
   5. API server becomes available on `http://localhost:5000`
 
 ## How to run on Windows startup
-  1. Open the startup folder by pressing <kbd>Windows</kbd> + <kbd>R</kbd> and typing `shell:startup`
-  2. Create a VBS file (e.g. `startup.vbs`) with the following content (replace `PATH_TO_PROJECT` with the absolute path to this project):
+  1. Set the environment variable `FLASK_APP` with `PATH_TO_PROJECT/app.py` (replace `PATH_TO_PROJECT` with the absolute path to this project)
+  2. Add the absolute path to this project to the `PATH` environment variable
+  3. Open the startup folder by pressing <kbd>Windows</kbd> + <kbd>R</kbd> and typing `shell:startup`
+  4. Create a VBS file (e.g. `startup.vbs`) with the following content:
       ```vbs
       Set WshShell = CreateObject("WScript.Shell")
-        WshShell.Run Chr(34) & "PATH_TO_PROJECT\run.bat" & Chr(34), 0
+        WshShell.Run Chr(34) & "run_flask.bat" & Chr(34), 0
       Set WshShell = Nothing
       ```
-  3. The server will automatically run in the background when the Windows starts next time, process name in Task Manager is `Python.exe`
+  5. The server will automatically run in the background when the Windows starts next time, process name in Task Manager is `Python.exe`
 
 ## Endpoints:
   - **GET** `/purchases`: Returns a list of all purchases
