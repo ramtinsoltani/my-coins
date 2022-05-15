@@ -43,7 +43,8 @@ DOCUMENT_SCHEMA = {
     'dollar_value': [float, int],
     'euro_value': [float, int],
     'bitcoin_price': [float, int],
-    'bitcoin_volume': [float, int]
+    'bitcoin_volume': [float, int],
+    'created_at': [int]
 }
 
 def create_document(collection, data):
@@ -55,8 +56,6 @@ def create_document(collection, data):
         Returns:
             document (dict): The written document data
     '''
-    # Generate timestamp in milliseconds and save as _created_at field
-    data['_created_at'] = utils.get_timestamp()
     # Insert new document and read its id
     id = _db[collection].insert_one(data).inserted_id
     # Read the document by id and return its data
@@ -72,7 +71,7 @@ def read_all_documents(collection):
     '''
     documents = []
     # Iterate through the collection, sorted by creation time in descending order
-    for document in _db[collection].find({}).sort([('_created_at', DESCENDING)]):
+    for document in _db[collection].find({}).sort([('created_at', DESCENDING)]):
         # Convert the document to JSON and add to list
         documents.append(_to_json(document))
     return documents
@@ -101,8 +100,6 @@ def update_document(collection, id, data):
         Returns:
             result (bool): The result of the update
     '''
-    # Add a creation timestamp to the given data to overwrite the on in the database
-    data['_created_at'] = utils.get_timestamp()
     # Find the document by id and update with new data, read modified count
     updates = _db[collection].update_one({ '_id': ObjectId(id) }, { '$set': data }).modified_count
     # Return true if one document has been modified

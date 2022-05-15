@@ -2,6 +2,7 @@ const ctx = document.getElementById('chart').getContext('2d');
 
 let latestPurchases = [];
 let oldToastType = 'text-bg-secondary';
+let dateFilterStart = null, dateFilterEnd = null;
 
 function getUrl(endpoint) {
 
@@ -29,6 +30,37 @@ function createGradient(height) {
   gradient.addColorStop(1, 'rgba(206, 255, 206, 0)');
 
   return gradient;
+
+}
+
+function formatTimestamp(timestamp) {
+
+  const date = new Date(timestamp);
+  const day = (date.getDate() + '').padStart(2, '0');
+  const month = (date.getMonth() + 1 + '').padStart(2, '0');
+  const year = (date.getFullYear() + '').padStart(4, '0');
+
+  return `${day}/${month}/${year}`;
+
+}
+
+function dateStringToTimestamp(text) {
+
+  const segments = text.split('/');
+
+  return new Date(`${segments[1]}/${segments[0]}/${segments[2]}`).getTime();
+
+}
+
+function isTimestampInRange(timestamp) {
+
+  if ( dateFilterStart && timestamp < dateFilterStart )
+    return false;
+
+  if ( dateFilterEnd && timestamp > dateFilterEnd )
+    return false;
+
+  return true;
 
 }
 
@@ -76,10 +108,9 @@ const config = {
         parsing: false,
         type: 'time',
         time: {
-          minUnit: 'hour',
-          tooltipFormat: 'LLL dd, yyyy / HH:mm',
+          minUnit: 'day',
+          tooltipFormat: 'LLL dd, yyyy',
           displayFormats: {
-            'hour': 'LLL dd, yyyy / HH:mm',
             'day': 'LLL dd, yyyy',
             'month': 'LLL yyyy',
             'year': 'yyyy'
@@ -135,6 +166,13 @@ const config = {
   }
 };
 
+const datepickerConfig = {
+  autoclose: true,
+  todayHighlight: true,
+  format: 'dd/mm/yyyy',
+  clearBtn: true
+};
+
 chart = new Chart(document.getElementById('chart'), config);
 
 function updateAnnotations(bittrexData) {
@@ -153,7 +191,7 @@ function updateDataset() {
 
   data.datasets[0].data = latestPurchases.map(p => ({
     y: p.bitcoin_price,
-    x: p._created_at
+    x: p.created_at
   }));
   data.datasets[0].metadata = latestPurchases.map(p => ({
     'Bitcoin Price': p.bitcoin_price,
@@ -210,11 +248,25 @@ function updateTable() {
     const purchase = latestPurchases[i];
     const row = template.content.cloneNode(true);
 
-    for ( const td of row.children[0].children )
-      if ( ! td.classList.contains('row-controls') )
-        td.innerText = purchase[td.dataset.key];
-      else
+    if ( ! isTimestampInRange(purchase.created_at) ) continue;
+
+    for ( const td of row.children[0].children ) {
+
+      if ( ! td.classList.contains('row-controls') ) {
+
+        if ( td.dataset.type === 'date' )
+          td.innerText = formatTimestamp(purchase[td.dataset.key]);
+        else
+          td.innerText = purchase[td.dataset.key];
+
+      }
+      else {
+
         td.dataset.index = i;
+
+      }
+
+    }
 
     tableBody.insertBefore(row, addButton);
 
@@ -241,11 +293,16 @@ function onEditPurchase(parentTd) {
 
     if ( input.tagName !== 'INPUT' ) continue;
 
-    input.value = latestPurchases[+parentTd.dataset.index][td.dataset.key];
+    if ( td.dataset.type === 'date' )
+      input.value = formatTimestamp(latestPurchases[+parentTd.dataset.index][td.dataset.key]);
+    else
+      input.value = latestPurchases[+parentTd.dataset.index][td.dataset.key];
 
   }
 
   tableBody.insertBefore(row, parentTd.parentElement);
+
+  $('input.date').datepicker(datepickerConfig);
 
 }
 
@@ -260,6 +317,8 @@ function onAddPurchase() {
 
   addButton.classList.add('d-none');
   tableBody.insertBefore(row, addButton);
+
+  $('input.date').datepicker(datepickerConfig);
 
 }
 
@@ -295,7 +354,19 @@ function onSubmitPurchase(parentTd) {
 
     if ( input.tagName !== 'INPUT' ) continue;
 
-    inputData[td.dataset.key] = td.dataset.type === 'number' ? +input.value : input.value.trim();
+    if ( ! input.value.trim().length )
+      return newToast('All fields are required!', 'warning');
+
+    let sanitized = input.value;
+
+    if ( td.dataset.type === 'number' )
+      sanitized = +sanitized;
+    else if ( td.dataset.type === 'date' )
+      sanitized = dateStringToTimestamp(sanitized);
+    else
+      sanitized = sanitized.trim();
+
+    inputData[td.dataset.key] = sanitized;
 
   }
 
@@ -346,6 +417,8 @@ function onSubmitPurchase(parentTd) {
       }
       else if ( result.invalid )
         newToast('Invalid input!', 'warning');
+      else if ( result.success === false )
+        newToast('Data has no changes')
 
     })
     .catch(error => {
@@ -386,6 +459,42 @@ function onDeletePurchase(index) {
 
 }
 
+function onFilterByDate() {
+
+  const start = document.getElementById('startDate').value.trim();
+  const end = document.getElementById('endDate').value.trim();
+
+  if ( ! start && ! end )
+    return onClearDateFilter();
+
+  const startTimestamp = dateStringToTimestamp(start);
+  const endTimestamp = dateStringToTimestamp(end);
+
+  if ( (isNaN(startTimestamp) && start) || (isNaN(endTimestamp) && end) )
+    return newToast('Invalid date range!', 'warning');
+
+  dateFilterStart = start ? startTimestamp : null;
+  dateFilterEnd = end ? endTimestamp : null;
+
+  updateTable();
+
+}
+
+function onClearDateFilter() {
+
+  const startInput = document.getElementById('startDate');
+  const endInput = document.getElementById('endDate');
+
+  startInput.value = '';
+  endInput.value = '';
+
+  dateFilterStart = null;
+  dateFilterEnd = null;
+
+  updateTable();
+
+}
+
 window.addEventListener('load', () => {
 
   const fetchBitcoinPrice = () => {
@@ -409,5 +518,7 @@ window.addEventListener('load', () => {
 
   // Fetch purchases
   fetchPurchases(true);
+
+  $('.input-daterange').datepicker(datepickerConfig);
 
 });

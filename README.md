@@ -43,7 +43,9 @@ The following responses are defined in the API server's REST interface:
     # The Bitcoin price at the time of the purchase
     'bitcoin_price': float,
     # The Bitcoin volume purchased
-    'bitcoin_volume': float
+    'bitcoin_volume': float,
+    # An epoch timestamp (in milliseconds) for the date of purchase
+    'created_at': int
 }
 ```
 
@@ -52,7 +54,6 @@ The following responses are defined in the API server's REST interface:
 ```py
 {
     '_id': str,
-    '_created_at': int,
     # The dollars value of the purchase
     'dollar_value': float,
     # The euros value of the purchase
@@ -61,6 +62,8 @@ The following responses are defined in the API server's REST interface:
     'bitcoin_price': float,
     # The Bitcoin volume purchased
     'bitcoin_volume': float
+    # An epoch timestamp (in milliseconds) for the date of purchase
+    'created_at': int
 }
 ```
 
