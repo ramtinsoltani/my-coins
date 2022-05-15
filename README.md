@@ -8,7 +8,7 @@
   5. API server becomes available on `http://localhost:5000`
 
 #### How to run on Windows startup
-  1. Open the startup folder by pressing <kbd>Windows</kbd> + <kbd>R<kbd> and typing `shell:startup`
+  1. Open the startup folder by pressing <kbd>Windows</kbd> + <kbd>R</kbd> and typing `shell:startup`
   2. Create a VBS file (e.g. `startup.vbs`) with the following content (replace `PATH_TO_PROJECT` with the absolute path to this project):
       ```vbs
       Set WshShell = CreateObject("WScript.Shell")
