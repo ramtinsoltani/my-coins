@@ -366,12 +366,11 @@ function updateTable() {
 function updateSummary() {
 
   const totalVolumeElement = document.getElementById('totalVolume');
-  const totalPriceElement = document.getElementById('totalPrice');
   const totalDollarsElement = document.getElementById('totalDollars');
   const totalEurosElement = document.getElementById('totalEuros');
   const profitElement = document.getElementById('profit');
 
-  let totalVolume = 0, totalPrice = 0, totalDollars = 0, totalEuros = 0, profit = 0;
+  let totalVolume = 0, totalDollars = 0, totalEuros = 0, profit = 0;
 
   const targetPurchases = latestPurchases
   // Only target the selected purchases that are rendered (within the time range filter)
@@ -381,7 +380,6 @@ function updateSummary() {
   for ( const purchase of targetPurchases ) {
 
     totalVolume += purchase.bitcoin_volume;
-    totalPrice += purchase.bitcoin_price;
     totalDollars += purchase.dollar_value;
     totalEuros += purchase.euro_value;
 
@@ -391,7 +389,6 @@ function updateSummary() {
 
   // Update the summary table (use .toFixed to overcome the decimal problems)
   totalVolumeElement.innerText = (+totalVolume.toFixed(10)) + '';
-  totalPriceElement.innerText = totalPrice.toFixed(2);
   totalDollarsElement.innerText = totalDollars.toFixed(2);
   totalEurosElement.innerText = totalEuros.toFixed(2);
   profitElement.innerText = profit.toFixed(2);
