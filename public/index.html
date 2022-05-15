@@ -31,7 +31,7 @@
       </div>
       <!-- Purchases table -->
       <table class="table table-hover">
-        <thead class="table-light">
+        <thead class="table-light position-sticky top-0">
           <tr>
             <th></th>
             <th>Bitcoin Volume</th>
@@ -50,27 +50,20 @@
             </td>
           </tr>
         </tbody>
-      </table>
-      <!-- Summary table -->
-      <table class="table summary-table">
-        <thead>
-          <tr>
-            <th>Total Volume</th>
-            <th>Total Price</th>
-            <th>Total Dollars</th>
-            <th>Total Euros</th>
-            <th>Profit</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr>
+        <!-- Summary -->
+        <tfoot>
+          <tr class="fw-bold bg-light">
+            <td></td>
             <td id="totalVolume"></td>
             <td id="totalPrice"></td>
             <td id="totalDollars"></td>
             <td id="totalEuros"></td>
-            <td class="fw-bold" id="profit"></td>
+            <td colspan="2">
+              <span>Profit:</span>
+              <span id="profit"></span>
+            </td>
           </tr>
-        </tbody>
+        </tfoot>
       </table>
       <!-- Purchase row template for displaying data -->
       <template id="purchaseRow">
