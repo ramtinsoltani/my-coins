@@ -251,6 +251,7 @@ function fetchBitcoinPrice() {
 
     lastBitcoinPrice = data.lastTradeRate;
     updateAnnotations(data);
+    updateSummary();
 
   })
   .catch(error => {
