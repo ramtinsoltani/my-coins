@@ -220,8 +220,8 @@ function updateDataset() {
 
   // Set the data points
   data.datasets[0].data = latestPurchases
-  // Filter out purchases not in the global time range
-  .filter(p => isTimestampInRange(p.created_at))
+  // Filter out purchases not in the global time range and not selected
+  .filter(p => !! selectionMappings[p._id] && isTimestampInRange(p.created_at))
   .map(p => ({
     y: p.bitcoin_price,
     x: p.created_at
@@ -665,6 +665,7 @@ function onSelectionChanged(checked, index) {
   selectionMappings[latestPurchases[index]._id] = checked;
 
   updateSummary();
+  updateDataset();
 
 }
 
