@@ -65,17 +65,42 @@ def _get_bittrex_headers(method, full_url, body=None):
 ########################## PUBLIC API ##########################
 ################################################################
 
-def get_bitcoin_ticker():
+def get_bittrex_market_ticker(market):
     '''
-    Sends an authorized request to Bittrex API to get the current market ticker for BTC-USD.
+    Sends an authorized request to Bittrex API to get the current market ticker for the given market.
+        Params:
+            market (str): The market name (e.g. BTC-USD)
         Returns:
             result (tuple): A tuple with the status code and the response body
     '''
     # Prepare request requirements
     method = 'GET'
-    full_url = _BASE_URL + '/markets/BTC-USD/ticker'
+    full_url = _BASE_URL + '/markets/' + market + '/ticker'
     headers = _get_bittrex_headers(method, full_url)
     # Send the request
     res = request(method, url=full_url, headers=headers)
     # Return status code and response body as tuple
     return (res.status_code, res.content)
+
+def get_markets():
+    '''
+    Gets a list of all markets from Bittrex API.
+        Returns:
+            markets (list): A list of all markets
+    '''
+    method = 'GET'
+    full_url = _BASE_URL + '/markets'
+    headers = _get_bittrex_headers(method, full_url)
+    # Send the request
+    res = request(method, url=full_url, headers=headers)
+    # If response status is not OK 200
+    if res.status_code != 200:
+        # Return status code and response body as tuple
+        return (res.status_code, res.content)
+    else:
+        # Extract markets from response
+        markets = []
+        for market in res.json():
+            markets.append(market['symbol'])
+        # Return status code and markets list as tuple
+        return (res.status_code, markets)

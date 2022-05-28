@@ -42,10 +42,25 @@ def _read_document(collection, id):
 DOCUMENT_SCHEMA = {
     'dollar_value': [float, int],
     'euro_value': [float, int],
-    'bitcoin_price': [float, int],
-    'bitcoin_volume': [float, int],
+    'coin_price': [float, int],
+    'coin_volume': [float, int],
+    'market': [str],
     'created_at': [int]
 }
+
+def get_markets(collection):
+    '''
+    Returns the list of bittrex markets from all purchases
+        Parameters:
+            collection (str): The collection name
+        Returns:
+            markets (list): The list of bittrex markets
+    '''
+    # Find distinct values of property 'market' from all documents
+    markets = _db[collection].distinct('market')
+    # Sort markets
+    markets.sort()
+    return markets
 
 def create_document(collection, data):
     '''
@@ -61,17 +76,18 @@ def create_document(collection, data):
     # Read the document by id and return its data
     return _read_document(collection, id)
 
-def read_all_documents(collection):
+def read_all_documents(collection, market):
     '''
     Reads all documents in a collection
         Parameters:
             collection (str): The collection name
+            market (str): The market name
         Returns:
             documents (list<object>): A list of all the documents
     '''
     documents = []
     # Iterate through the collection, sorted by creation time in descending order
-    for document in _db[collection].find({}).sort([('created_at', DESCENDING)]):
+    for document in _db[collection].find({ 'market': market }).sort([('created_at', DESCENDING)]):
         # Convert the document to JSON and add to list
         documents.append(_to_json(document))
     return documents

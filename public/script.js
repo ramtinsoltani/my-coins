@@ -7,7 +7,9 @@ let chart = null;
 let latestPurchases = [];
 let oldToastType = 'text-bg-secondary';
 let dateFilterStart = null, dateFilterEnd = null;
-let lastBitcoinPrice = null;
+let lastCoinPrice = null;
+let currentMarket = null;
+let bittrexMarkets = null;
 const selectionMappings = {};
 
 //////////////////////////////////////////////////////////////
@@ -223,7 +225,7 @@ function updateDataset() {
   // Filter out purchases not in the global time range and not selected
   .filter(p => !! selectionMappings[p._id] && isTimestampInRange(p.created_at))
   .map(p => ({
-    y: p.bitcoin_price,
+    y: p.coin_price,
     x: p.created_at
   }));
 
@@ -232,8 +234,9 @@ function updateDataset() {
   // Filter out purchases not in the global time range
   .filter(p => isTimestampInRange(p.created_at))
   .map(p => ({
-    'Bitcoin Price': p.bitcoin_price,
-    'Bitcoin Volume': p.bitcoin_volume,
+    'Market': currentMarket,
+    'Coin Price': p.coin_price,
+    'Coin Volume': p.coin_volume,
     'Dollar Value': p.dollar_value,
     'Euro Value': p.euro_value
   }));
@@ -243,21 +246,29 @@ function updateDataset() {
 
 }
 
-function fetchBitcoinPrice() {
+function fetchMarketTicker() {
 
-  fetch(getUrl('/bitcoin'))
-  .then(res => res.json())
-  .then(data => {
+  return new Promise(resolve => {
 
-    lastBitcoinPrice = data.lastTradeRate;
-    updateAnnotations(data);
-    updateSummary();
+    // If no market is selected, ignore
+    if ( ! currentMarket ) return resolve();
 
-  })
-  .catch(error => {
+    fetch(getUrl(`/bittrex/${currentMarket}`))
+    .then(res => res.json())
+    .then(data => {
 
-    console.error(error);
-    newToast(error.message, 'danger');
+      lastCoinPrice = data.lastTradeRate;
+      updateAnnotations(data);
+      updateSummary();
+
+    })
+    .catch(error => {
+
+      console.error(error);
+      newToast(error.message, 'danger');
+
+    })
+    .finally(resolve);
 
   });
 
@@ -267,7 +278,7 @@ function fetchPurchases(updateView) {
 
   return new Promise(resolve => {
 
-    fetch(getUrl('/purchases'))
+    fetch(getUrl(`/purchases/${currentMarket}`))
     .then(res => res.json())
     .then(purchases => {
 
@@ -380,25 +391,243 @@ function updateSummary() {
   // Calculate the summary
   for ( const purchase of targetPurchases ) {
 
-    totalVolume += purchase.bitcoin_volume;
+    totalVolume += purchase.coin_volume;
     totalDollars += purchase.dollar_value;
     totalEuros += purchase.euro_value;
 
   }
 
-  profit = ((totalVolume * lastBitcoinPrice) - totalDollars);
+  profit = ((totalVolume * lastCoinPrice) - totalDollars);
 
   // Update the summary table (use .toFixed to overcome the decimal problems)
   totalVolumeElement.innerText = (+totalVolume.toFixed(10)) + '';
   totalDollarsElement.innerText = totalDollars.toFixed(2);
   totalEurosElement.innerText = totalEuros.toFixed(2);
-  profitElement.innerText = profit.toFixed(2);
+  profitElement.innerText = isNaN(profit) ? '0.00' : profit.toFixed(2);
 
   // Add color styling
   profitElement.classList.remove('text-success', 'text-danger');
 
   if ( profit > 0 ) profitElement.classList.add('text-success');
   if ( profit < 0 ) profitElement.classList.add('text-danger');
+
+}
+
+function selectMarket(element) {
+
+  // Ignore if market is already selected
+  if ( element.dataset.value === currentMarket ) return;
+
+  // Set current market
+  currentMarket = element.dataset.value;
+
+  // Deactivate all tabs
+  const tabs = document.getElementById('marketTabs');
+
+  for ( const tab of tabs.children )
+    tab.firstElementChild.classList.remove('active');
+
+  // Activate current tab
+  element.classList.add('active');
+
+  // Fetch purchases
+  fetchPurchases(false)
+  // Update market graph
+  .then(fetchMarketTicker)
+  .then(updateDataset)
+  .then(updateTable);
+
+}
+
+function fetchMarkets() {
+
+  return new Promise(resolve => {
+
+    // Fetch markets from the backend
+    fetch(getUrl('/markets'))
+    .then(res => res.json())
+    .then(data => {
+
+      // Set current market to the first found market (or undefined)
+      currentMarket = data[0];
+
+      // Render the market tabs
+      const tabs = document.getElementById('marketTabs');
+      const template = document.getElementById('marketTab');
+
+      // For each market in the response array
+      for ( const market of data ) {
+
+        const tab = template.content.cloneNode(true);
+
+        // Set data-value attribute with market name
+        tab.firstElementChild.firstElementChild.dataset.value = market;
+        // Set tab text
+        tab.firstElementChild.firstElementChild.innerText = market;
+        // Set active class
+        if ( market === currentMarket )
+          tab.firstElementChild.firstElementChild.classList.add('active');
+
+        // Add tab into tabs
+        tabs.appendChild(tab);
+
+      }
+
+    })
+    .catch(error => {
+
+      console.error(error);
+      newToast(error.message, 'danger');
+
+    })
+    .finally(resolve);
+
+  });
+
+}
+
+function fetchBittrexMarkets() {
+
+  return new Promise(resolve => {
+
+    // Ignore if markets have already been fetched
+    if ( bittrexMarkets?.length )
+      return resolve();
+    
+    // Fetch bittrex markets
+    fetch(getUrl('/bittrex/markets'))
+    .then(res => res.json())
+    .then(data => {
+
+      bittrexMarkets = data;
+
+      // Update modal list
+      const template = document.getElementById('marketItem');
+      const modal = document.getElementById('marketList');
+
+      for ( const market of data ) {
+
+        const item = template.content.cloneNode(true);
+
+        // Set data-value
+        item.firstElementChild.dataset.value = market;
+        // Set text
+        item.firstElementChild.innerText = market;
+
+        // Add to list
+        modal.appendChild(item);
+
+      }
+
+    })
+    .catch(error => {
+
+      console.error(error);
+      newToast(error.message, 'danger');
+
+    })
+    .finally(resolve);
+
+  });
+
+}
+
+function toggleNoDataMode(active) {
+
+  if ( ! active ) {
+
+    // Display table
+    document.querySelector('table').classList.remove('d-none');
+    // Display date filter
+    document.querySelector('.input-daterange').classList.remove('d-none');
+    // Hide no data element
+    document.getElementById('noData').classList.add('d-none');
+    // Display tabs
+    document.getElementById('tabsContainer').classList.remove('d-none');
+
+  }
+  else {
+
+    // Hide table
+    document.querySelector('table').classList.add('d-none');
+    // Hide date filter
+    document.querySelector('.input-daterange').classList.add('d-none');
+    // Display no data element
+    document.getElementById('noData').classList.remove('d-none');
+    // Hide tabs
+    document.getElementById('tabsContainer').classList.add('d-none');
+
+  }
+
+}
+
+function onFilterMarketList(value) {
+
+  const list = document.getElementById('marketList');
+
+  // If cleared
+  if ( ! value ) {
+
+    for ( const item of list.children )
+      item.classList.remove('d-none', 'first-visible', 'last-visible');
+
+  }
+  // If searching
+  else {
+
+    let firstVisibleItem, lastVisibleItem;
+
+    for ( const item of list.children ) {
+
+      // If item does not match, hide
+      if ( ! item.dataset.value.toLowerCase().includes(value.trim().toLowerCase()) ) {
+        
+        item.classList.add('d-none');
+
+      }
+      // If visible
+      else {
+
+        // Set first visible item
+        if ( ! firstVisibleItem )
+          firstVisibleItem = item;
+        
+        // Set last visible item
+        lastVisibleItem = item;
+    
+      }
+
+    }
+
+    firstVisibleItem?.classList.add('first-visible');
+    lastVisibleItem?.classList.add('last-visible');
+
+  }
+
+}
+
+function onAddMarket(market) {
+
+  // Close modal
+  $('#marketsModal').modal('hide');
+
+  // Exit no data mode (if already in)
+  toggleNoDataMode(false);
+
+  // Add new market
+  const tabs = document.getElementById('marketTabs');
+  const template = document.getElementById('marketTab');
+  const tab = template.content.cloneNode(true);
+
+  // Set tab data arrtibute and text
+  tab.firstElementChild.firstElementChild.dataset.value = market;
+  tab.firstElementChild.firstElementChild.innerText = market;
+
+  // Append to tabs
+  tabs.appendChild(tab);
+
+  // Select this tab
+  selectMarket(tabs.lastElementChild.firstElementChild);
 
 }
 
@@ -520,6 +749,9 @@ function onSubmitPurchase(parentTd) {
     inputData[td.dataset.key] = sanitized;
 
   }
+
+  // Set market
+  inputData.market = currentMarket;
 
   // If adding a new purchase
   if ( parentTd.dataset.mode === 'add' ) {
@@ -670,16 +902,36 @@ function onSelectionChanged(checked, index) {
 
 }
 
+function onShowMarketsModal() {
+
+  fetchBittrexMarkets()
+  .then(() => {
+
+    $('#marketsModal').modal('show');
+
+  });
+
+}
+
 window.addEventListener('load', () => {
 
-  // Fetch Bitcoin price every 5 seconds
-  setInterval(fetchBitcoinPrice, 5000);
+  // Fetch markets
+  fetchMarkets()
+  .then(() => {
 
-  // ...and right now
-  fetchBitcoinPrice();
+    // Display table and date range filter controls if there's data
+    if ( currentMarket ) toggleNoDataMode(false);
 
-  // Fetch purchases
-  fetchPurchases(true);
+    // Fetch current market ticker every 5 seconds
+    setInterval(fetchMarketTicker, 5000);
+
+    // ...and right now
+    fetchMarketTicker();
+
+    // Fetch purchases
+    fetchPurchases(true);
+
+  });
 
   // Register date picker plugin for the range filter
   $('.input-daterange').datepicker(datepickerConfig);

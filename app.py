@@ -11,10 +11,15 @@ app = Flask(__name__)
 ######################## API ENDPOINTS #########################
 ################################################################
 
-@app.route('/purchases', methods=['GET'])
-def get_purchases():
+@app.route('/purchases/<market>', methods=['GET'])
+def get_purchases(market):
     # Read all documents under the purchases collection
-    return jsonify(mongod.read_all_documents('purchases')), JSON_CONTENT_TYPE_HEADER
+    return jsonify(mongod.read_all_documents('purchases', market)), JSON_CONTENT_TYPE_HEADER
+
+@app.route('/markets', methods=['GET'])
+def get_markets():
+    # Read distinct market names from all documents in the purchases collection
+    return jsonify(mongod.get_markets('purchases')), JSON_CONTENT_TYPE_HEADER
 
 @app.route('/purchase/<id>', methods=['DELETE'])
 def delete_purchase(id):
@@ -43,10 +48,16 @@ def add_new_purchase():
     # Create new document
     return mongod.create_document('purchases', request.json), JSON_CONTENT_TYPE_HEADER
 
-@app.route('/bitcoin', methods=['GET'])
-def get_bitcoin_price():
-    # Get current bitcoin price/ticker from Bittrex API
-    result = bittrex.get_bitcoin_ticker()
+@app.route('/bittrex/markets', methods=['GET'])
+def get_bittrex_markets():
+    # Get a list of all markets available on bittrex
+    result = bittrex.get_markets()
+    return jsonify(result[1]), result[0], JSON_CONTENT_TYPE_HEADER
+
+@app.route('/bittrex/<market>', methods=['GET'])
+def get_bittrex_market(market):
+    # Get current bittrex market ticker from Bittrex API
+    result = bittrex.get_bittrex_market_ticker(market)
     return result[1], result[0], JSON_CONTENT_TYPE_HEADER
 
 ################################################################
