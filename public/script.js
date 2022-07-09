@@ -231,8 +231,8 @@ function updateDataset() {
 
   // Set the metadata object to be displayed in tooltip of each data point
   data.datasets[0].metadata = latestPurchases
-  // Filter out purchases not in the global time range
-  .filter(p => isTimestampInRange(p.created_at))
+  // Filter out purchases not in the global time range and not selected
+  .filter(p => !! selectionMappings[p._id] && isTimestampInRange(p.created_at))
   .map(p => ({
     'Market': currentMarket,
     'Coin Price': p.coin_price,
@@ -493,7 +493,7 @@ function fetchBittrexMarkets() {
     // Ignore if markets have already been fetched
     if ( bittrexMarkets?.length )
       return resolve();
-    
+
     // Fetch bittrex markets
     fetch(getUrl('/bittrex/markets'))
     .then(res => res.json())
@@ -585,7 +585,7 @@ function onFilterMarketList(value) {
 
       // If item does not match, hide
       if ( ! item.dataset.value.toLowerCase().includes(value.trim().toLowerCase()) ) {
-        
+
         item.classList.add('d-none');
 
       }
@@ -595,10 +595,10 @@ function onFilterMarketList(value) {
         // Set first visible item
         if ( ! firstVisibleItem )
           firstVisibleItem = item;
-        
+
         // Set last visible item
         lastVisibleItem = item;
-    
+
       }
 
     }
