@@ -115,6 +115,20 @@ const annotations = {
       content: '',
       backgroundColor: 'rgba(0, 0, 0, .75)'
     }
+  },
+  breakEvenLine: {
+    display: false,
+    type: 'line',
+    scaleID: 'y',
+    borderWidth: 2,
+    borderColor: '#33cd39',
+    borderDash: [6, 6],
+    value: 0,
+    label: {
+      enabled: false,
+      content: '',
+      backgroundColor: 'rgba(0, 0, 0, .75)'
+    }
   }
 };
 
@@ -203,12 +217,18 @@ chart = new Chart(document.getElementById('chart'), config);
 /////////////////////// Global Methods ///////////////////////
 //////////////////////////////////////////////////////////////
 
-function updateAnnotations(bittrexData) {
+function updateAnnotations(bittrexData, profit) {
 
   // Update the annotation line and label based on the given bittrex data
   annotations.bittrexLine.value = bittrexData.lastTradeRate;
   annotations.bittrexLine.label.content = `Bid (${(+bittrexData.bidRate).toFixed(2)}), Ask (${(+bittrexData.askRate).toFixed(2)}), Last (${(+bittrexData.lastTradeRate).toFixed(2)})`;
   annotations.bittrexLine.display = true;
+
+  const breakEvenPrice = (profit * -1) + (+bittrexData.lastTradeRate);
+
+  annotations.breakEvenLine.value = breakEvenPrice;
+  annotations.breakEvenLine.label.content = `Break even point: $${breakEvenPrice.toFixed(2)}`;
+  annotations.breakEvenLine.display = true;
 
   // Update the chart
   chart.update();
@@ -258,8 +278,7 @@ function fetchMarketTicker() {
     .then(data => {
 
       lastCoinPrice = data.lastTradeRate;
-      updateAnnotations(data);
-      updateSummary();
+      updateAnnotations(data, updateSummary());
 
     })
     .catch(error => {
@@ -410,6 +429,8 @@ function updateSummary() {
 
   if ( profit > 0 ) profitElement.classList.add('text-success');
   if ( profit < 0 ) profitElement.classList.add('text-danger');
+
+  return isNaN(profit) ? 0 : profit;
 
 }
 
