@@ -220,9 +220,13 @@ chart = new Chart(document.getElementById('chart'), config);
 function updateAnnotations(bittrexData, profit) {
 
   // Update the annotation line and label based on the given bittrex data
-  annotations.bittrexLine.value = bittrexData.lastTradeRate;
-  annotations.bittrexLine.label.content = `Bid (${(+bittrexData.bidRate).toFixed(2)}), Ask (${(+bittrexData.askRate).toFixed(2)}), Last (${(+bittrexData.lastTradeRate).toFixed(2)})`;
-  annotations.bittrexLine.display = true;
+  if ( bittrexData ) {
+
+    annotations.bittrexLine.value = bittrexData.lastTradeRate;
+    annotations.bittrexLine.label.content = `Bid (${(+bittrexData.bidRate).toFixed(2)}), Ask (${(+bittrexData.askRate).toFixed(2)}), Last (${(+bittrexData.lastTradeRate).toFixed(2)})`;
+    annotations.bittrexLine.display = true;
+
+  }
 
   const breakEvenPrice = (profit * -1) + (+bittrexData.lastTradeRate);
 
@@ -429,6 +433,9 @@ function updateSummary() {
 
   if ( profit > 0 ) profitElement.classList.add('text-success');
   if ( profit < 0 ) profitElement.classList.add('text-danger');
+
+  // Update break even line annotation
+  updateAnnotations(null, profit);
 
   return isNaN(profit) ? 0 : profit;
 
