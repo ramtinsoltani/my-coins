@@ -217,7 +217,11 @@ chart = new Chart(document.getElementById('chart'), config);
 /////////////////////// Global Methods ///////////////////////
 //////////////////////////////////////////////////////////////
 
+let lastBittrexData = null;
+
 function updateAnnotations(bittrexData, profit) {
+
+  let currentBittrexData = bittrexData || lastBittrexData;
 
   // Update the annotation line and label based on the given bittrex data
   if ( bittrexData ) {
@@ -226,13 +230,19 @@ function updateAnnotations(bittrexData, profit) {
     annotations.bittrexLine.label.content = `Bid (${(+bittrexData.bidRate).toFixed(2)}), Ask (${(+bittrexData.askRate).toFixed(2)}), Last (${(+bittrexData.lastTradeRate).toFixed(2)})`;
     annotations.bittrexLine.display = true;
 
+    lastBittrexData = bittrexData;
+
   }
 
-  const breakEvenPrice = (profit * -1) + (+bittrexData.lastTradeRate);
+  if ( currentBittrexData ) {
 
-  annotations.breakEvenLine.value = breakEvenPrice;
-  annotations.breakEvenLine.label.content = `Break even point: $${breakEvenPrice.toFixed(2)}`;
-  annotations.breakEvenLine.display = true;
+    const breakEvenPrice = (profit * -1) + (+currentBittrexData.lastTradeRate);
+
+    annotations.breakEvenLine.value = breakEvenPrice;
+    annotations.breakEvenLine.label.content = `Break even point: $${breakEvenPrice.toFixed(2)}`;
+    annotations.breakEvenLine.display = true;
+
+  }
 
   // Update the chart
   chart.update();
